@@ -1,10 +1,11 @@
 """Real pretrained multilingual MiniLM, ONNX CPU inference, no remote API.
 
-Reference mean pooling: model card in SOURCES.md. We pin the revision and
+Reference mean pooling: model card in docs/SOURCES.md. We pin the revision and
 SHA-256 of every downloaded artifact. No substitute model or lexical fallback.
 """
 from __future__ import annotations
 
+from collections import OrderedDict
 import hashlib
 import json
 import math
@@ -23,8 +24,8 @@ for _key in ('OMP_NUM_THREADS', 'OPENBLAS_NUM_THREADS', 'MKL_NUM_THREADS',
     os.environ[_key] = '1'
 os.environ['TOKENIZERS_PARALLELISM'] = 'false'
 
-from cache_store import JsonCache
-from catalog import ROOT, clean, fingerprint
+from hackalem.cache_store import JsonCache
+from hackalem.catalog import ROOT, clean, fingerprint
 
 
 class ModelError(RuntimeError):
@@ -45,7 +46,7 @@ def _log(text: str) -> None:
 
 def ensure_model(folder: Path, *, offline: bool = False,
                  log: Callable[[str], None] = _log) -> dict:
-    lock = json.loads((ROOT / 'model.lock.json').read_text(encoding='utf-8'))
+    lock = json.loads((ROOT / 'config/model.lock.json').read_text(encoding='utf-8'))
     folder.mkdir(parents=True, exist_ok=True)
     for item in lock['files']:
         dest = folder / item['local']
@@ -139,7 +140,8 @@ class MiniLMEncoder:
                                      'numpy': np.__version__, 'encoder_version': 1})
         self.label = self.lock['repository']
         self.cache = JsonCache(cache_dir / 'embeddings' if cache_dir else None)
-        self.memory: dict[str, list[float]] = {}
+        self.memory = OrderedDict()
+        self.memory_limit = 1024
 
     def chunks(self, text: str) -> list[str]:
         """Keep all description text; split sentences, then long spans by tokens."""
@@ -163,15 +165,22 @@ class MiniLMEncoder:
                     output.append(piece)
         return output or [text]
 
+    def remember(self, key, value):
+        self.memory[key] = value
+        self.memory.move_to_end(key)
+        while len(self.memory) > self.memory_limit:
+            self.memory.popitem(last=False)
+
     def embed(self, text: str) -> list[float]:
         text = clean(text)
         key = fingerprint({'encoder': self.identity, 'text': text})
         if key in self.memory:
+            self.memory.move_to_end(key)
             return list(self.memory[key])
         stored = self.cache.get(key)
         if isinstance(stored, list) and len(stored) == self.dimension and all(
                 isinstance(v, (int, float)) and math.isfinite(v) for v in stored):
-            self.memory[key] = stored
+            self.remember(key, stored)
             return list(stored)
         # Refuse silent truncation; all callers must use chunks() first.
         size = len(self.splitter.encode(text).ids)
@@ -194,6 +203,6 @@ class MiniLMEncoder:
         if not math.isfinite(norm) or norm == 0:
             raise ModelError('Модель вернула некорректный вектор.')
         result = [float(v) / norm for v in pooled]
-        self.memory[key] = result
+        self.remember(key, result)
         self.cache.put(key, result)
         return list(result)

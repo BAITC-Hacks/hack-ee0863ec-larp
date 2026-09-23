@@ -7,9 +7,9 @@ import unittest
 import urllib.error
 import urllib.request
 from http.server import ThreadingHTTPServer
-from catalog import ROOT
-from catalog_server import initialize_database, read_profiles, CatalogHandler
-from web_server import Application, WebHandler
+from hackalem.catalog import ROOT
+from hackalem.catalog_server import initialize_database, read_profiles, CatalogHandler, configure_server
+from hackalem.web_server import Application, WebHandler
 
 class ServerTests(unittest.TestCase):
     def setUp(self):
@@ -18,7 +18,7 @@ class ServerTests(unittest.TestCase):
         self.database = Path(self.temp.name) / "catalog.sqlite3"
         initialize_database(self.database, ROOT / "data/catalog.csv")
         self.catalog = self.start(CatalogHandler)
-        self.catalog.database = self.database
+        configure_server(self.catalog, self.database)
         self.web = self.start(WebHandler)
         self.web.app = Application(self.url(self.catalog))
 
@@ -67,7 +67,7 @@ class ServerTests(unittest.TestCase):
             result = json.load(response)
         self.assertEqual(result["cards"], [])
         self.assertFalse(result["ai_used"])
-        self.assertIsNone(self.web.app.encoder)
+        self.assertTrue(all(w["encoder"] is None for w in self.web.app.workers))
 
 if __name__ == "__main__":
     unittest.main()

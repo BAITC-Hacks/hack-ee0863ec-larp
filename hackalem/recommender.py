@@ -6,8 +6,8 @@ from collections import Counter
 from pathlib import Path
 from typing import Callable, Protocol
 
-from cache_store import JsonCache
-from catalog import (FLAG_FIELDS, REASONS, ROOT, Profile, Query, belongs, fingerprint,
+from hackalem.cache_store import JsonCache
+from hackalem.catalog import (FLAG_FIELDS, REASONS, ROOT, Profile, Query, belongs, fingerprint,
                      rejection_reasons, normalized)
 
 APP_VERSION = 'hackalem-ai-console-1.0'
@@ -92,7 +92,7 @@ class Recommender:
         self.result_cache = JsonCache(cache_dir / 'results' if cache_dir else None)
         self.profile_vectors: dict[str, tuple[list[str], list[list[float]]]] = {}
         # Source changes invalidate result cache, even when version was not bumped.
-        self.code_hash = fingerprint({name: (ROOT / name).read_text(encoding='utf-8')
+        self.code_hash = fingerprint({name: (ROOT / 'hackalem' / name).read_text(encoding='utf-8')
                                       for name in ('catalog.py', 'recommender.py', 'ai_model.py')})
 
     @property

@@ -12,7 +12,7 @@ from datetime import date, datetime
 from pathlib import Path
 from typing import Any
 
-ROOT = Path(__file__).resolve().parent
+ROOT = Path(__file__).resolve().parents[1]
 WINDOW_START = date(2026, 9, 23)
 WINDOW_END = date(2026, 12, 31)
 LIST_FIELDS = ('categories', 'event_formats', 'languages', 'busy_dates')

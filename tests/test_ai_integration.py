@@ -4,9 +4,9 @@ import math
 import os
 import unittest
 
-from ai_model import MiniLMEncoder
-from catalog import ROOT, Query, canonical_json, load_catalog
-from recommender import Recommender, cosine
+from hackalem.ai_model import MiniLMEncoder
+from hackalem.catalog import ROOT, Query, canonical_json, load_catalog
+from hackalem.recommender import Recommender, cosine
 
 
 @unittest.skipUnless(os.environ.get('RUN_AI_TESTS') == '1',

@@ -13,12 +13,12 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from ai_model import ModelError, ensure_model
-from cache_store import JsonCache
-from catalog import (ROOT, Query, belongs, canonical_json, fingerprint, load_catalog,
+from hackalem.ai_model import ModelError, ensure_model
+from hackalem.cache_store import JsonCache
+from hackalem.catalog import (ROOT, Query, belongs, canonical_json, fingerprint, load_catalog,
                      parse_budget, parse_flag, rejection_reasons)
-from main import render
-from recommender import Recommender, cosine, unit_mean
+from hackalem.cli import render
+from hackalem.recommender import Recommender, cosine, unit_mean
 
 
 class TestEncoder:
