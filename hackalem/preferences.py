@@ -21,6 +21,8 @@ def clauses(text):
 
 def absence(text, noun):
     """Only unqualified absences; 'без банальных конкурсов' is narrower."""
+    if re.search(r'\b(?:если|могу|можем|возможно|только|доплат\w*|по запросу|при условии)\b', text):
+        return False
     direct = rf'\b(?:без|никаких)\s+(?:{noun})\b|\b(?:{noun})\s+нет\b'
     # Carry 'без' through a plain list, but not through adjectives or a verb.
     coordinated = rf'\bбез\s+(?:конкурсов|игр)\s+и\s+(?:{noun})\b'

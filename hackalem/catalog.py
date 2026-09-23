@@ -7,6 +7,7 @@ import json
 import math
 import re
 import unicodedata
+from decimal import Decimal, InvalidOperation
 from dataclasses import asdict, dataclass
 from datetime import date, datetime
 from pathlib import Path
@@ -32,6 +33,8 @@ Profile = dict[str, Any]
 def clean(value: str) -> str:
     if not isinstance(value, str):
         raise ValueError('Ожидается текстовое значение.')
+    if len(value) > 20000 or any(unicodedata.category(c) in ('Cs', 'Cc') and c not in '\r\n\t' for c in value):
+        raise ValueError('Invalid text length or Unicode control character.')
     return ' '.join(unicodedata.normalize('NFKC', value).split())
 
 
@@ -87,8 +90,13 @@ def positive_number(value: Any, label: str, *, allow_zero: bool = False) -> floa
 def parse_budget(value: Any) -> int:
     if isinstance(value, str):
         value = ''.join(clean(value).split())
-    amount = positive_number(value, 'Бюджет', allow_zero=True)
-    if not amount.is_integer() or amount > 10**12:
+    if isinstance(value, bool):
+        raise ValueError('Budget must be a number, not a boolean.')
+    try:
+        amount = Decimal(str(value))
+    except (InvalidOperation, ValueError) as exc:
+        raise ValueError('Invalid budget.') from exc
+    if not amount.is_finite() or amount < 0 or amount > 10**12 or amount != amount.to_integral_value():
         raise ValueError('Бюджет: целое число тенге от 0 до 1 000 000 000 000.')
     return int(amount)
 
@@ -164,8 +172,11 @@ class Query:
     hours: float | None = None
     language: str | None = None
     preferences: str = ''
+    include_synthetic: bool = True
 
     def __post_init__(self) -> None:
+        if type(self.include_synthetic) is not bool:
+            raise ValueError('include_synthetic must be boolean.')
         # Normalize before both cache lookup and inference: equivalent input has
         # identical model text, not just identical cache keys.
         for key in ('city', 'event_format', 'category', 'preferences'):
@@ -190,6 +201,8 @@ class Query:
 
 
 def belongs(profile: Profile, query: Query) -> bool:
+    if not query.include_synthetic and profile['synthetic']:
+        return False
     return normalized(profile['city']) == query.city and query.category in {
         normalized(v) for v in profile['categories']}
 

@@ -176,7 +176,7 @@ def main() -> int:
                                  [str(n) for n in range(len(choices) + 1)], '0')
                 if choice != '0':
                     suggestion = choices[int(choice) - 1]
-                    query = Query(**(query.as_dict() | {suggestion['field']: suggestion['suggested_value']}))
+                    query = Query(**(query.as_dict() | (suggestion['changes'] if 'changes' in suggestion else {suggestion['field']: suggestion['suggested_value']})))
                     print(render(engine.recommend(query)))
             reply = input('\nEnter — новый запрос; 0 — выход: ').strip()
             if normalized(reply) in ('0', 'нет', 'n', 'exit', 'quit', 'выход'):

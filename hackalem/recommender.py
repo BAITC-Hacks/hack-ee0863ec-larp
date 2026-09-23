@@ -95,6 +95,30 @@ def change_suggestions(base: list[Profile], query: Query) -> list[dict]:
             if day != original and add('event_date', day.isoformat(),
                     f'Изменить только дату: {query.event_date} → {day.isoformat()}.'):
                 break
+    # Offer a second budget level when it increases the choice to up to three.
+    if len(prices) > 1:
+        threshold = sorted(prices)[min(2, len(prices)-1)]
+        if threshold != min(prices):
+            add('budget_kzt', threshold, f'Бюджет для большего выбора: {money(threshold)} ₸.')
+    if not suggestions:
+        original = date.fromisoformat(query.event_date)
+        dates = sorted((WINDOW_START + timedelta(days=n) for n in range((WINDOW_END-WINDOW_START).days+1)),
+                       key=lambda d: (abs((d-original).days), d < original))
+        for day in dates:
+            relaxed = replace(query, event_date=day.isoformat(), budget_kzt=10**12)
+            candidates = [p for p in base if not rejection_reasons(p, relaxed)]
+            if not candidates:
+                continue
+            amount = max(query.budget_kzt, min(p['price_from_kzt'] for p in candidates))
+            changes = {'event_date': day.isoformat(), 'budget_kzt': amount}
+            changed = replace(query, **changes)
+            eligible = [p for p in base if not rejection_reasons(p, changed)]
+            suggestions.append({'field': 'combined', 'changes': changes,
+                'message': f'Изменить дату на {day.isoformat()} и бюджет на {money(amount)} ₸.',
+                'eligible_count': len(eligible),
+                'profiles': [{'id': p['id'], 'name': p['anon_name'], 'price_from_kzt': p['price_from_kzt'],
+                              'flags': {k:p[k] for k in FLAG_FIELDS}, 'warnings': profile_warnings(p)} for p in eligible]})
+            break
     return suggestions
 
 

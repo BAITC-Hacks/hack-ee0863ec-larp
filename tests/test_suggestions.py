@@ -19,7 +19,7 @@ class SuggestionTests(unittest.TestCase):
         query = query_example('budget')
         original = query.as_dict()
         result = self.engine.recommend(query)
-        suggestion, = result['suggestions']
+        suggestion = result['suggestions'][0]
         self.assertEqual((suggestion['field'], suggestion['original_value'], suggestion['suggested_value']),
                          ('budget_kzt', 100000, 800000))
         self.assertEqual(result['cards'], [])
@@ -36,7 +36,7 @@ class SuggestionTests(unittest.TestCase):
     def test_venue_date_and_warnings_before_and_after_choice(self):
         query = query_example('venue_busy')
         result = self.engine.recommend(query)
-        suggestion, = result['suggestions']
+        suggestion = result['suggestions'][0]
         self.assertEqual(suggestion['field'], 'event_date')
         self.assertEqual(suggestion['suggested_value'], '2026-11-15')
         profile, = suggestion['profiles']
@@ -54,7 +54,7 @@ class SuggestionTests(unittest.TestCase):
         for example in ('budget', 'busy', 'venue_busy', 'no_category'):
             query = query_example(example)
             for suggestion in self.engine.recommend(query)['suggestions']:
-                changed = replace(query, **{suggestion['field']: suggestion['suggested_value']})
+                changed = replace(query, **(suggestion['changes'] if 'changes' in suggestion else {suggestion['field']: suggestion['suggested_value']}))
                 expected = [p['id'] for p in self.rows if belongs(p, changed) and not rejection_reasons(p, changed)]
                 self.assertTrue(expected)
                 self.assertEqual([p['id'] for p in suggestion['profiles']], expected)
@@ -62,7 +62,7 @@ class SuggestionTests(unittest.TestCase):
 
     def test_no_suggestion_when_two_changes_are_required(self):
         query = replace(query_example('venue_busy'), budget_kzt=0)
-        self.assertEqual(self.engine.recommend(query)['suggestions'], [])
+        self.assertEqual(self.engine.recommend(query)['suggestions'][0]['field'], 'combined')
         self.assertEqual(self.engine.recommend(query_example('no_category'))['suggestions'], [])
 
     def test_calendar_bounds_and_fully_booked_window(self):

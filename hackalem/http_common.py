@@ -1,5 +1,6 @@
 """Bounded local HTTP transport."""
 import json
+from decimal import Decimal
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
@@ -58,7 +59,16 @@ class Handler(BaseHTTPRequestHandler):
         raw = self.rfile.read(size)
         if len(raw) != size:
             raise ValueError("Incomplete body.")
-        value = json.loads(raw)
+        def unique(pairs):
+            result = {}
+            for key, value in pairs:
+                if key in result:
+                    raise ValueError('Duplicate JSON field.')
+                result[key] = value
+            return result
+        def invalid(value):
+            raise ValueError('Non-finite JSON number.')
+        value = json.loads(raw, parse_float=Decimal, parse_constant=invalid, object_pairs_hook=unique)
         if not isinstance(value, dict):
             raise ValueError("Expected a JSON object.")
         return value

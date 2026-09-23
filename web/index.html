@@ -18,6 +18,7 @@
 <div class="layout">
 <form class="panel" id="form">
 <h2>Ваше мероприятие</h2>
+<label><input type="checkbox" name="include_synthetic" checked style="display:inline;width:auto;margin-right:8px">Включать учебные профили (syn)</label>
 <label>Город<select name="city" required></select></label>
 <label>Кого ищете<select name="category" required></select></label>
 <div class="pair"><label>Дата<input name="event_date" type="date" value="2026-11-14" min="2026-09-23" max="2026-12-31" required></label><label>Бюджет, ₸<input name="budget_kzt" type="number" value="1200000" min="0" max="1000000000000" required></label></div>
@@ -55,7 +56,15 @@
 const form=document.querySelector('#form'), submit=document.querySelector('#submit'), results=document.querySelector('#results'), errorBox=document.querySelector('#error');
 const money=new Intl.NumberFormat('ru-RU');
 function el(tag,text,cls){const node=document.createElement(tag);if(text!==undefined)node.textContent=text;if(cls)node.className=cls;return node}
-async function api(url,options){const response=await fetch(url,options);const data=await response.json();if(!response.ok)throw new Error(data.error||'Ошибка сервера');return data}
+async function api(url,options={}){
+ const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),30000);
+ try{
+  const response=await fetch(url,{...options,signal:controller.signal});
+  if(response.status===429||response.status===503){const seconds=response.headers.get('Retry-After')||'несколько';throw new Error('Сервис занят или недоступен. Повторите запрос через '+seconds+' секунд.');}
+  const data=await response.json();if(!response.ok)throw new Error(data.error||'Ошибка сервера');return data;
+ }catch(e){if(e.name==='AbortError')throw new Error('Время ожидания истекло. Нажмите «Подобрать подрядчиков», чтобы повторить.');throw e}
+ finally{clearTimeout(timer)}
+}
 function error(message){errorBox.textContent=message;errorBox.className='error';errorBox.hidden=false}
 function select(name,values,chosen,optional=false){const field=form.elements[name];field.replaceChildren();if(optional)field.add(new Option('Любой',''));values.forEach(v=>field.add(new Option(v,v)));field.value=chosen}
 function example(){Object.entries({city:'Алматы',category:'Ведущий',event_date:'2026-11-14',event_format:'корпоратив',budget_kzt:'1200000',hours:'6',language:'русский',preferences:'Интеллигентный юмор, импровизация, общение с гостями без банальных конкурсов'}).forEach(([k,v])=>form.elements[k].value=v)}
@@ -68,15 +77,15 @@ function card(item,index,catalog=false){
  else{node.append(el('blockquote',item.description_excerpt));const details=el('details');details.append(el('summary','Почему этот подрядчик'),el('p',item.explanation),el('p','Смысловая близость: '+item.semantic_score.toFixed(3)));node.append(details);item.warnings.forEach(w=>node.append(el('p',w,'warning')))}
  return node;
 }
-function formQuery(){const data=Object.fromEntries(new FormData(form));data.hours=data.hours||null;data.language=data.language||null;return data}
+function formQuery(){const data=Object.fromEntries(new FormData(form));data.include_synthetic=form.elements.include_synthetic.checked;data.hours=data.hours||null;data.language=data.language||null;return data}
 function suggestion(item,original){
  const node=el('article',undefined,'card');
- node.append(el('h3',item.message),el('p','Все остальные условия сохранены. После изменения пройдут обязательные проверки: '+item.eligible_count+'.'));
+ node.append(el('h3',item.message),el('p','Меняются только указанные условия. После изменения пройдут обязательные проверки: '+item.eligible_count+'.'));
  item.profiles.forEach(p=>{node.append(el('p',p.name+' · '+p.id+' · от '+money.format(p.price_from_kzt)+' ₸'));p.warnings.forEach(w=>node.append(el('p',w,'warning')))});
  const choose=el('button','Применить это изменение','primary');choose.type='button';
  choose.onclick=()=>{
   if(JSON.stringify(formQuery())!==JSON.stringify(original)){error('Условия в форме изменились. Выполните подбор заново для проверки предложений.');return}
-  form.elements[item.field].value=item.suggested_value;form.requestSubmit();
+  for(const [key,value] of Object.entries(item.changes||{[item.field]:item.suggested_value}))form.elements[key].value=value;form.requestSubmit();
  };
  node.append(choose);return node;
 }
@@ -89,7 +98,7 @@ form.addEventListener('submit',async event=>{
   if(result.suggestions?.length){
    const alternatives=el('section');alternatives.append(el('h2','Варианты изменения запроса'),el('p','Это отдельные предложения. Условия изменятся только после вашего выбора.'));
    result.suggestions.forEach(item=>alternatives.append(suggestion(item,data)));results.append(alternatives);
-  }else results.append(el('p','Изменение только бюджета или только даты не даёт совпадений в известном календаре.'));
+  }else results.append(el('p','Изменение бюджета и даты не даёт совпадений. Проверьте категорию, город, язык и длительность.'));
  }
  else result.cards.forEach((item,index)=>results.append(card(item,index)));
  results.append(el('p',result.notice,'meta'));
@@ -97,13 +106,14 @@ form.addEventListener('submit',async event=>{
  finally{submit.disabled=false;submit.textContent='Подобрать подрядчиков';results.removeAttribute('aria-busy')}
 });
 document.querySelector('#example').onclick=()=>{example();form.scrollIntoView({behavior:'smooth'})};
+form.elements.include_synthetic.onchange=()=>{document.querySelector('#catalogList').replaceChildren();document.querySelector('#showCatalog').textContent='Показать каталог'};
 const tryExample=document.querySelector('#try-example');
 tryExample.onclick=()=>{example();form.requestSubmit()};
 document.querySelector('#showCatalog').onclick=async function(){
  const list=document.querySelector('#catalogList');
  if(list.children.length){list.replaceChildren();this.textContent='Показать каталог';return}
  this.disabled=true;
- try{const data=await api('/api/catalog');data.profiles.forEach((p,i)=>list.append(card(p,i,true)));this.textContent='Скрыть каталог'}
+ try{const data=await api('/api/catalog');data.profiles.filter(p=>form.elements.include_synthetic.checked||!p.synthetic).forEach((p,i)=>list.append(card(p,i,true)));this.textContent='Скрыть каталог'}
  catch(e){error(e.message)}
  finally{this.disabled=false}
 };

@@ -40,6 +40,8 @@ class JsonCache:
             path.unlink(missing_ok=True)
             count -= 1
             total -= size
+        self._count, self._bytes = count, total
+        self._last_scan = time.monotonic()
 
     def get(self, key: str) -> Any | None:
         if self.folder is None:
@@ -66,8 +68,14 @@ class JsonCache:
             try:
                 with os.fdopen(fd, 'w', encoding='utf-8', newline='\n') as f:
                     f.write(payload)
-                os.replace(temp, self.folder / f'{key}.json')
-                self._prune()
+                target = self.folder / f'{key}.json'
+                previous = target.stat().st_size if target.exists() else 0
+                os.replace(temp, target)
+                self._count += int(previous == 0)
+                self._bytes += len(payload.encode("utf-8")) - previous
+                if (self.max_entries < 64 or self._count >= self.max_entries or
+                        self._bytes >= self.max_bytes or time.monotonic()-self._last_scan > 30):
+                    self._prune()
             finally:
                 if os.path.exists(temp):
                     os.unlink(temp)

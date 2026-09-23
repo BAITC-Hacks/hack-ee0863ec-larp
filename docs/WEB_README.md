@@ -90,3 +90,24 @@ POST принимает поля Query, как в examples/dense.json.
 
 Это локальный сайт, доступный на этом компьютере. Для публикации в интернете нужны
 отдельное развёртывание и сервер, рассчитанный на публичный доступ.
+
+## Review fixes
+
+Search can exclude synthetic profiles from results, suggestions and catalogue display.
+Budgets use exact decimal validation. Invalid Unicode, duplicate JSON fields and
+nonfinite JSON numbers are rejected. Conditional promises remain unconfirmed.
+Suggestions now include larger budgets and combined date/budget alternatives.
+Browser requests time out after 30 seconds and display explicit retry guidance.
+
+Imports back up a nonempty database into data/backups before replacement. Restore:
+
+    .\.venv\Scripts\python.exe -m scripts.restore_catalog data/backups/catalog-TIMESTAMP.sqlite3
+
+Restore backs up the current data too. Backups are excluded from Git; copy them
+to separate storage and remove older backups manually when appropriate.
+Cache cleanup scans periodically or at tracked capacity instead of every write.
+Across multiple processes limits are soft until the next scan (30 seconds of writes).
+
+Remaining product limits: the existing 2026 calendar is the only known availability.
+Real-time calendar integration, verified contacts, booking and payment are not implemented.
+Recommendation quality still needs human-rated examples; see EVALUATION.md.
