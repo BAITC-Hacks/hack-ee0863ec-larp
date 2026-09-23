@@ -1,0 +1,4 @@
+# Python 3.11-3.13, 64 bit; CPU only, no API keys / PyTorch required.
+numpy==2.3.5
+onnxruntime==1.23.2
+tokenizers==0.22.1

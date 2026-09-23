@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+*.pyc
+models/*.onnx
+models/tokenizer.json
+models/*.part
+cache/embeddings/
+cache/results/
+
+data/*.sqlite3
+data/*.sqlite3-*

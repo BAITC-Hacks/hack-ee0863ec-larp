@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>HackAlem — подбор подрядчиков</title>
+<style>
+:root{font-family:Segoe UI,Arial,sans-serif;color:#182c29;background:#f4f6f2;font-size:16px}*{box-sizing:border-box}body{margin:0}header{border-bottom:1px solid #dae2d9;background:white;padding:22px max(5vw,20px);display:flex;justify-content:space-between;align-items:center;gap:16px}.logo{font-size:23px;font-weight:750;letter-spacing:-1px}.logo span{color:#20775f}.status{font-size:13px;color:#526a60}main{max-width:1180px;margin:42px auto;padding:0 24px}.eyebrow{color:#22775c;text-transform:uppercase;letter-spacing:2px;font-size:12px;font-weight:700}h1{font-size:clamp(30px,4vw,46px);line-height:1.12;letter-spacing:-1.5px;margin:12px 0}p{line-height:1.6}.intro{color:#61706a;max-width:670px}.layout{display:grid;grid-template-columns:360px 1fr;gap:28px;margin-top:32px;align-items:start}.panel,.card{background:white;border:1px solid #dde5dc;border-radius:18px;padding:25px}.panel h2{margin:0 0 22px;font-size:20px}label{display:block;font-size:13px;font-weight:600;margin-bottom:15px}input,select,textarea{display:block;width:100%;border:1px solid #cbd7cd;border-radius:9px;padding:11px;margin-top:7px;font:inherit;color:#182c29;background:#fff}textarea{resize:vertical;min-height:100px}input:focus,select:focus,textarea:focus{outline:2px solid #59a889;outline-offset:2px}.pair{display:grid;grid-template-columns:1fr 1fr;gap:12px}button{font:inherit;cursor:pointer;border-radius:9px;padding:12px 15px;border:0;background:#1b7057;color:white;font-weight:600}button:disabled{opacity:.55;cursor:wait}.primary{width:100%}.secondary{background:#e9f1e8;color:#245e49;font-size:13px}.hint{font-size:12px;color:#69796e;font-weight:400}.results-head{display:flex;align-items:center;justify-content:space-between;gap:12px}.results-head h2{font-size:22px}.empty{padding:65px 30px;text-align:center;border:1px dashed #bacdbc;border-radius:18px;color:#64766b}.empty strong{display:block;color:#305642;font-size:21px;margin-bottom:10px}.card{margin:15px 0}.card-top{display:flex;justify-content:space-between;align-items:center;gap:12px}.avatar{height:44px;width:44px;display:grid;place-items:center;border-radius:13px;background:#edf2d8;font-size:20px;color:#577238}.card h3{font-size:22px;margin:17px 0 6px}.meta{color:#65776b;font-size:14px}.price{font-size:23px;font-weight:700;margin:18px 0}.tag{background:#edf4ed;border-radius:20px;padding:6px 11px;font-size:12px;color:#387459}blockquote{border-left:3px solid #c5d89f;padding-left:15px;margin:18px 0;line-height:1.6;color:#52614f}.warning{font-size:13px;color:#8a5a21}.error{color:#aa3030;background:#fff0ee;padding:14px;border-radius:10px}details{font-size:13px;line-height:1.6;color:#667668;margin:18px 0}summary{cursor:pointer}#summary{color:#506957;font-size:14px}#catalog{margin-top:40px}.catalog-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.catalog-grid .card{margin:0}.catalog-grid h3{font-size:18px}footer{margin:40px 0;color:#7c887d;font-size:12px}@media(max-width:800px){.layout{grid-template-columns:1fr}.catalog-grid{grid-template-columns:1fr}main{padding:0 16px;margin-top:28px}header{padding:18px}.status{max-width:160px;text-align:right}.panel{padding:20px}}
+</style>
+</head>
+<body>
+<header><div class="logo">Hack<span>Alem</span></div><div class="status" id="connection">Подключаем каталог…</div></header>
+<main>
+<div class="eyebrow">Мероприятие начинается с команды</div>
+<h1>Найдите тех, кто подходит вам</h1>
+<p class="intro">Расскажите о мероприятии. Мы проверим условия и предложим до трёх подрядчиков, чьи описания ближе к вашим пожеланиям.</p>
+<div class="layout">
+<form class="panel" id="form">
+<h2>Ваше мероприятие</h2>
+<label>Город<select name="city" required></select></label>
+<label>Кого ищете<select name="category" required></select></label>
+<div class="pair"><label>Дата<input name="event_date" type="date" value="2026-11-14" min="2026-09-23" max="2026-12-31" required></label><label>Бюджет, ₸<input name="budget_kzt" type="number" value="1200000" min="0" max="1000000000000" required></label></div>
+<label>Формат<select name="event_format" required></select></label>
+<div class="pair"><label>Длительность, ч<input name="hours" type="number" value="6" min="0.1" step="any"></label><label>Язык<select name="language"></select></label></div>
+<label>Ваши пожелания<textarea name="preferences" maxlength="2000" placeholder="Например: интеллигентный юмор и общение с гостями">Интеллигентный юмор, импровизация, общение с гостями без банальных конкурсов</textarea></label>
+<p class="hint">Календарь каталога: 23 сентября — 31 декабря 2026.</p>
+<button class="primary" id="submit" disabled>Подобрать подрядчиков</button>
+</form>
+<section aria-label="Результаты подбора">
+<div class="results-head"><h2>Ваши рекомендации</h2><button type="button" class="secondary" id="example" disabled>Заполнить пример</button></div>
+<p id="summary" role="status" aria-live="polite"></p>
+<div id="error" role="alert" hidden></div>
+<div id="results"><div class="empty"><strong>Ваша команда — здесь</strong>Заполните форму и нажмите «Подобрать подрядчиков».</div></div>
+<details><summary>Как понимать результаты подбора</summary><p>ИИ сравнивает смысл описаний и пожеланий. Его оценка не является вероятностью или оценкой качества работы. Цена «от» — начальная, доступность указана по учебному календарю. Услуги и окончательные условия нужно уточнить у подрядчика.</p></details>
+</section>
+</div>
+<section id="catalog"><div class="results-head"><h2>Каталог подрядчиков</h2><button class="secondary" id="showCatalog" type="button">Показать каталог</button></div><div id="catalogList" class="catalog-grid"></div></section>
+<footer>HackAlem · Подбор по условиям и смыслу описаний</footer>
+</main>
+<script>
+const form=document.querySelector('#form'), submit=document.querySelector('#submit'), results=document.querySelector('#results'), errorBox=document.querySelector('#error');
+const money=new Intl.NumberFormat('ru-RU');
+function el(tag,text,cls){const node=document.createElement(tag);if(text!==undefined)node.textContent=text;if(cls)node.className=cls;return node}
+async function api(url,options){const response=await fetch(url,options);const data=await response.json();if(!response.ok)throw new Error(data.error||'Ошибка сервера');return data}
+function error(message){errorBox.textContent=message;errorBox.className='error';errorBox.hidden=false}
+function select(name,values,chosen,optional=false){const field=form.elements[name];field.replaceChildren();if(optional)field.add(new Option('Любой',''));values.forEach(v=>field.add(new Option(v,v)));field.value=chosen}
+function example(){Object.entries({city:'Алматы',category:'Ведущий',event_date:'2026-11-14',event_format:'корпоратив',budget_kzt:'1200000',hours:'6',language:'русский',preferences:'Интеллигентный юмор, импровизация, общение с гостями без банальных конкурсов'}).forEach(([k,v])=>form.elements[k].value=v)}
+function card(item,index,catalog=false){
+ const node=el('article',undefined,'card'),top=el('div',undefined,'card-top');
+ const name=catalog?item.anon_name:item.name;
+ top.append(el('div',name.slice(0,1),'avatar'),el('span',catalog?item.id:'Подбор №'+(index+1),'tag'));
+ node.append(top,el('h3',name),el('div',(catalog?item.categories.join(', '):item.category)+' · '+item.city,'meta'),el('div','от '+money.format(item.price_from_kzt)+' ₸','price'));
+ if(catalog){node.append(el('p',item.description),el('p',item.languages.join(' · '),'meta'));if(item.synthetic)node.append(el('p','Синтетический профиль','warning'))}
+ else{node.append(el('blockquote',item.description_excerpt));const details=el('details');details.append(el('summary','Почему этот подрядчик'),el('p',item.explanation),el('p','Смысловая близость: '+item.semantic_score.toFixed(3)));node.append(details);item.warnings.forEach(w=>node.append(el('p',w,'warning')))}
+ return node;
+}
+form.addEventListener('submit',async event=>{
+ event.preventDefault();errorBox.hidden=true;submit.disabled=true;submit.textContent='Подбираем…';results.setAttribute('aria-busy','true');results.replaceChildren();document.querySelector('#summary').textContent='ИИ сравнивает описания. Первый подбор может занять несколько секунд.';
+ try{const data=Object.fromEntries(new FormData(form));data.hours=data.hours||null;data.language=data.language||null;const result=await api('/api/recommend',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
+ document.querySelector('#summary').textContent=result.message;
+ if(!result.cards.length){results.append(el('div','Совпадений нет. Попробуйте другую дату, бюджет или категорию.','empty'))}
+ else result.cards.forEach((item,index)=>results.append(card(item,index)));
+ }catch(e){document.querySelector('#summary').textContent='';error(e.message)}
+ finally{submit.disabled=false;submit.textContent='Подобрать подрядчиков';results.removeAttribute('aria-busy')}
+});
+document.querySelector('#example').onclick=()=>{example();form.scrollIntoView({behavior:'smooth'})};
+document.querySelector('#showCatalog').onclick=async function(){
+ const list=document.querySelector('#catalogList');
+ if(list.children.length){list.replaceChildren();this.textContent='Показать каталог';return}
+ this.disabled=true;
+ try{const data=await api('/api/catalog');data.profiles.forEach((p,i)=>list.append(card(p,i,true)));this.textContent='Скрыть каталог'}
+ catch(e){error(e.message)}
+ finally{this.disabled=false}
+};
+async function init(){try{const data=await api('/api/options');select('city',data.cities,'Алматы');select('category',data.categories,'Ведущий');select('event_format',data.formats,'корпоратив');select('language',data.languages,'русский',true);document.querySelector('#connection').textContent=data.count+' подрядчиков в каталоге';submit.disabled=false;document.querySelector('#example').disabled=false}catch(e){document.querySelector('#connection').textContent='Каталог недоступен';error(e.message)}}
+init();
+</script>
+</body></html>

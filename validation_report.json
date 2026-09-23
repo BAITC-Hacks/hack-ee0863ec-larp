@@ -1,0 +1,111 @@
+{
+  "checked_with": "3.13.5",
+  "platform": "Linux",
+  "profile_count": 66,
+  "unique_ids": 66,
+  "source_sha256": "6a724b6b7dfb5973343e68ba18dadb60fc807d87e3d78f03ee86fb26cb089f7d",
+  "unit_tests_passed": 46,
+  "real_model_tests_skipped": 4,
+  "real_model_execution_verified": false,
+  "limitation": "Cannot download real weights in build environment; no AI-ranked outputs claimed.",
+  "filter_cases": [
+    {
+      "example": "budget.json",
+      "base_count": 5,
+      "eligible_count": 0,
+      "expected_card_count": 0,
+      "eligible_ids_unranked": [],
+      "exclusion_counts": {
+        "budget": 5,
+        "event_format": 1,
+        "busy_date": 1
+      }
+    },
+    {
+      "example": "busy.json",
+      "base_count": 5,
+      "eligible_count": 0,
+      "expected_card_count": 0,
+      "eligible_ids_unranked": [],
+      "exclusion_counts": {
+        "event_format": 1,
+        "busy_date": 4
+      }
+    },
+    {
+      "example": "dense.json",
+      "base_count": 10,
+      "eligible_count": 4,
+      "expected_card_count": 3,
+      "eligible_ids_unranked": [
+        "HK-27222",
+        "HK-29829",
+        "HK-44733",
+        "HK-44923"
+      ],
+      "exclusion_counts": {
+        "busy_date": 5,
+        "event_format": 1,
+        "budget": 2
+      }
+    },
+    {
+      "example": "no_category.json",
+      "base_count": 0,
+      "eligible_count": 0,
+      "expected_card_count": 0,
+      "eligible_ids_unranked": [],
+      "exclusion_counts": {}
+    },
+    {
+      "example": "other_date.json",
+      "base_count": 10,
+      "eligible_count": 5,
+      "expected_card_count": 3,
+      "eligible_ids_unranked": [
+        "HK-27222",
+        "HK-35215",
+        "HK-44733",
+        "HK-44923",
+        "HK-88430"
+      ],
+      "exclusion_counts": {
+        "busy_date": 2,
+        "event_format": 1,
+        "budget": 2
+      }
+    },
+    {
+      "example": "rare.json",
+      "base_count": 2,
+      "eligible_count": 1,
+      "expected_card_count": 1,
+      "eligible_ids_unranked": [
+        "HK-90001"
+      ],
+      "exclusion_counts": {
+        "busy_date": 1
+      }
+    },
+    {
+      "example": "venue_busy.json",
+      "base_count": 1,
+      "eligible_count": 0,
+      "expected_card_count": 0,
+      "eligible_ids_unranked": [],
+      "exclusion_counts": {
+        "busy_date": 1
+      }
+    },
+    {
+      "example": "venue_free.json",
+      "base_count": 1,
+      "eligible_count": 1,
+      "expected_card_count": 1,
+      "eligible_ids_unranked": [
+        "HK-90012"
+      ],
+      "exclusion_counts": {}
+    }
+  ]
+}

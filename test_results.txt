@@ -1,0 +1,55 @@
+test_chunks_do_not_overflow_token_window (test_ai_integration.RealModelTests.test_chunks_do_not_overflow_token_window) ... skipped 'Requires real model: prepare it, then set RUN_AI_TESTS=1.'
+test_real_384_dimension_embedding (test_ai_integration.RealModelTests.test_real_384_dimension_embedding) ... skipped 'Requires real model: prepare it, then set RUN_AI_TESTS=1.'
+test_russian_semantic_smoke (test_ai_integration.RealModelTests.test_russian_semantic_smoke) ... skipped 'Requires real model: prepare it, then set RUN_AI_TESTS=1.'
+test_two_real_sessions_equal (test_ai_integration.RealModelTests.test_two_real_sessions_equal) ... skipped 'Requires real model: prepare it, then set RUN_AI_TESTS=1.'
+test_categories_split (test_core.CatalogTests.test_categories_split) ... ok
+test_duplicate_id_fails (test_core.CatalogTests.test_duplicate_id_fails) ... ok
+test_empty_catalog_fails (test_core.CatalogTests.test_empty_catalog_fails) ... ok
+test_flags (test_core.CatalogTests.test_flags) ... ok
+test_invalid_flag (test_core.CatalogTests.test_invalid_flag) ... ok
+test_jsonl_equals_csv (test_core.CatalogTests.test_jsonl_equals_csv) ... ok
+test_missing_columns_fails (test_core.CatalogTests.test_missing_columns_fails) ... ok
+test_null_hours (test_core.CatalogTests.test_null_hours) ... ok
+test_record_count (test_core.CatalogTests.test_record_count) ... ok
+test_unique_ids (test_core.CatalogTests.test_unique_ids) ... ok
+test_budget_no_model (test_core.MatchingTests.test_budget_no_model) ... ok
+test_busy_no_model (test_core.MatchingTests.test_busy_no_model) ... ok
+test_changed_data_invalidate_cache (test_core.MatchingTests.test_changed_data_invalidate_cache) ... ok
+test_changed_date_changes_eligible_pool (test_core.MatchingTests.test_changed_date_changes_eligible_pool) ... ok
+test_dense_returns_three_of_four (test_core.MatchingTests.test_dense_returns_three_of_four) ... ok
+test_duration_is_hard_constraint (test_core.MatchingTests.test_duration_is_hard_constraint) ... ok
+test_every_card_satisfies_all_constraints (test_core.MatchingTests.test_every_card_satisfies_all_constraints) ... ok
+test_language_is_hard_constraint (test_core.MatchingTests.test_language_is_hard_constraint) ... ok
+test_no_category_no_model (test_core.MatchingTests.test_no_category_no_model) ... ok
+test_null_hours_not_zero (test_core.MatchingTests.test_null_hours_not_zero) ... ok
+test_output_explanations_are_actual_source_spans (test_core.MatchingTests.test_output_explanations_are_actual_source_spans) ... ok
+test_price_is_inclusive (test_core.MatchingTests.test_price_is_inclusive) ... ok
+test_rare_exactly_one_no_fabrication (test_core.MatchingTests.test_rare_exactly_one_no_fabrication) ... ok
+test_repeated_uncached_engines_identical (test_core.MatchingTests.test_repeated_uncached_engines_identical) ... ok
+test_result_cache_survives_new_engine (test_core.MatchingTests.test_result_cache_survives_new_engine) ... ok
+test_row_order_does_not_change_output (test_core.MatchingTests.test_row_order_does_not_change_output) ... ok
+test_score_is_not_probability (test_core.MatchingTests.test_score_is_not_probability) ... ok
+test_semantic_vectors_change_order_not_just_price (test_core.MatchingTests.test_semantic_vectors_change_order_not_just_price) ... ok
+test_ties_use_price_then_id (test_core.MatchingTests.test_ties_use_price_then_id) ... ok
+test_venue_calendar (test_core.MatchingTests.test_venue_calendar) ... ok
+test_bad_dates_rejected (test_core.QueryTests.test_bad_dates_rejected) ... ok
+test_budget_validation (test_core.QueryTests.test_budget_validation) ... ok
+test_equivalent_inputs_normalize_identically (test_core.QueryTests.test_equivalent_inputs_normalize_identically) ... ok
+test_hours_validation (test_core.QueryTests.test_hours_validation) ... ok
+test_optional_fields (test_core.QueryTests.test_optional_fields) ... ok
+test_preference_limit (test_core.QueryTests.test_preference_limit) ... ok
+test_bad_vector_rejected (test_core.UtilityTests.test_bad_vector_rejected) ... ok
+test_cache_checksum_checked (test_core.UtilityTests.test_cache_checksum_checked) ... ok
+test_cache_corruption_ignored (test_core.UtilityTests.test_cache_corruption_ignored) ... ok
+test_cache_roundtrip (test_core.UtilityTests.test_cache_roundtrip) ... ok
+test_cli_empty_result_runs_without_ai (test_core.UtilityTests.test_cli_empty_result_runs_without_ai) ... ok
+test_cli_help (test_core.UtilityTests.test_cli_help) ... ok
+test_corrupt_model_hash_rejected (test_core.UtilityTests.test_corrupt_model_hash_rejected) ... ok
+test_dimension_mismatch (test_core.UtilityTests.test_dimension_mismatch) ... ok
+test_missing_offline_model_gives_clear_error (test_core.UtilityTests.test_missing_offline_model_gives_clear_error) ... ok
+test_unit_mean (test_core.UtilityTests.test_unit_mean) ... ok
+
+----------------------------------------------------------------------
+Ran 50 tests in 1.390s
+
+OK (skipped=4)
