@@ -4,10 +4,10 @@ import unittest
 from dataclasses import replace
 from datetime import timedelta
 
-from hackalem.catalog import WINDOW_START, WINDOW_END, belongs, load_catalog, rejection_reasons
+from hackalem.catalog import WINDOW_START, WINDOW_END, belongs, rejection_reasons
 from hackalem.cli import render
 from hackalem.recommender import Recommender
-from tests.test_core import TestEncoder, fail_factory, query_example
+from tests.test_core import TestEncoder, fail_factory, query_example, load_catalog
 
 
 class SuggestionTests(unittest.TestCase):

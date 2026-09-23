@@ -37,7 +37,7 @@ class ServerTests(unittest.TestCase):
         before = read_profiles(self.database)
         initialize_database(self.database, Path(self.temp.name) / "missing.csv")
         self.assertEqual(before, read_profiles(self.database))
-        self.assertEqual(len(before), 66)
+        self.assertEqual(len(before), 166)
 
     def test_catalog_flows_through_http(self):
         with urllib.request.urlopen(self.url(self.web) + "/api/catalog") as response:

@@ -17,6 +17,11 @@ from hackalem.ai_model import ModelError, ensure_model
 from hackalem.cache_store import JsonCache
 from hackalem.catalog import (ROOT, Query, belongs, canonical_json, fingerprint, load_catalog,
                      parse_budget, parse_flag, rejection_reasons)
+
+# Original examples have fixed expected counts; keep their historical fixture.
+_original_load_catalog = load_catalog
+def load_catalog(path=ROOT / "tests/fixtures/original_catalog.csv"):
+    return _original_load_catalog(path)
 from hackalem.cli import render
 from hackalem.recommender import Recommender, cosine, unit_mean
 
@@ -330,7 +335,7 @@ class UtilityTests(unittest.TestCase):
             unit_mean([[0, 0]])
 
     def test_cli_empty_result_runs_without_ai(self):
-        completed = subprocess.run([sys.executable, str(ROOT / 'main.py'), '--query',
+        completed = subprocess.run([sys.executable, str(ROOT / 'main.py'), '--catalog', str(ROOT / 'tests/fixtures/original_catalog.csv'), '--query',
                                     str(ROOT / 'examples/no_category.json'), '--json', '--offline'],
                                    capture_output=True, timeout=20)
         self.assertEqual(completed.returncode, 0, completed.stderr)

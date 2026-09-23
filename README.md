@@ -288,3 +288,6 @@ Run from the repository root:
 ```powershell
 .\.venv\Scripts\python.exe run_web.py
 ```
+
+
+Archive comparison and consolidation: [report](docs/ARCHIVE_MERGE.md).
