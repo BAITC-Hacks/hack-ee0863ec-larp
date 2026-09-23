@@ -1,3 +1,7 @@
+# hack-ee0863ec-larp
+Hackathon team repository for Larp
+Larp is larp
+
 # HackAlem AI — консольный прототип
 
 Программа читает ваш каталог `data/catalog.csv` (также поддерживает JSONL),
