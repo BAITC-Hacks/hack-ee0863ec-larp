@@ -10,6 +10,7 @@ import urllib.request
 import uuid
 import webbrowser
 from hackalem.catalog import ROOT
+from hackalem.cors import origin_key
 
 def ensure_ports_free(ports):
     reservations = []
@@ -60,7 +61,14 @@ def stop_child(child):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--no-browser", action="store_true")
+    parser.add_argument("--allow-origin", action="append", default=[], metavar="URL",
+                        help="Allow a separate frontend origin (repeatable).")
     args = parser.parse_args()
+    try:
+        for origin in args.allow_origin:
+            origin_key(origin)
+    except ValueError as exc:
+        parser.error(str(exc))
     children = []
     try:
         ensure_ports_free((8001, 8000))
@@ -68,7 +76,11 @@ def main():
         env = dict(os.environ, HACKALEM_INSTANCE=token)
         for module, port, service in (("hackalem.catalog_server", 8001, "hackalem-catalog"),
                                       ("hackalem.web_server", 8000, "hackalem-web")):
-            child = subprocess.Popen([sys.executable, "-m", module], cwd=ROOT, env=env)
+            command = [sys.executable, "-m", module]
+            if module == "hackalem.web_server":
+                for origin in args.allow_origin:
+                    command.extend(["--allow-origin", origin])
+            child = subprocess.Popen(command, cwd=ROOT, env=env)
             children.append(child)
             wait_ready(child, port, token, service)
         print("Open http://127.0.0.1:8000 | Ctrl+C to stop", flush=True)

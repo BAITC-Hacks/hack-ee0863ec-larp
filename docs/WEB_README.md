@@ -58,6 +58,29 @@ HTTP-сервер ограничен 24 соединениями; тайм-ау�
 Сайт: GET /api/options, GET /api/catalog, POST /api/recommend, GET /health.
 POST принимает поля Query, как в examples/dense.json.
 
+## Отдельный фронтенд
+
+По умолчанию разрешён интерфейс с того же адреса, что и API. Для фронтенда
+на отдельном порту укажите его точный origin (схема, хост и порт, без пути):
+
+```powershell
+.\.venv\Scripts\python.exe run_web.py --allow-origin http://localhost:5173 --allow-origin http://127.0.0.1:5173
+```
+
+Фронтенд обращается к `http://127.0.0.1:8000/api/options` и
+`http://127.0.0.1:8000/api/recommend`. Для POST отправляйте JSON и
+`Content-Type: application/json`. Предварительный OPTIONS возвращает 204;
+заголовки CORS присутствуют и на ответах с ошибкой для разрешённого origin.
+Другие origins остаются запрещены, wildcard и cookies для CORS не включены.
+Для отдельного запуска `python -m hackalem.web_server` доступен тот же флаг.
+
+Новые поля карточки: `preference_checks` (пожелание, supported/conflict/unknown,
+исходный фрагмент) и `preference_conflicts` (количество прямых противоречий).
+`supported` означает только прямое утверждение в описании, а не проверенную услугу.
+Фронтенд должен показывать `warnings`, особенно при конфликте или отсутствии
+подтверждения. Старые поля карточек сохранены. `semantic_score` не включает
+правило снижения приоритета за противоречия; точный порядок описан в `ranking_rule`.
+
 Сервисы можно запускать отдельно в двух терминалах:
 
 ```powershell

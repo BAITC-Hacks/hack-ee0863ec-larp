@@ -7,10 +7,11 @@ from pathlib import Path
 from typing import Callable, Protocol
 
 from hackalem.cache_store import JsonCache
+from hackalem.preferences import assess
 from hackalem.catalog import (FLAG_FIELDS, REASONS, ROOT, Profile, Query, belongs, fingerprint,
                      rejection_reasons, normalized)
 
-APP_VERSION = 'hackalem-ai-console-1.0'
+APP_VERSION = 'hackalem-ai-1.1'
 # Deliberate engineering constants, NOT learned relevance labels/probabilities.
 BEST_CHUNK_WEIGHT = 0.7
 MEAN_CHUNK_WEIGHT = 0.3
@@ -47,7 +48,7 @@ def money(value: int) -> str:
     return f'{value:,}'.replace(',', ' ')
 
 
-def _card(profile: Profile, query: Query, score: float, quote: str) -> dict:
+def _card(profile: Profile, query: Query, score: float, quote: str, checks: list[dict]) -> dict:
     facts = [f'В каталоге нет занятости на {query.event_date}',
              f'формат «{query.event_format}» указан',
              f'цена от {money(profile["price_from_kzt"])} ₸ при бюджете {money(query.budget_kzt)} ₸']
@@ -61,6 +62,11 @@ def _card(profile: Profile, query: Query, score: float, quote: str) -> dict:
     # facts, reviews, availability or prices; descriptions are self-reports.
     excerpt = quote if len(quote) <= 320 else quote[:317].rsplit(' ', 1)[0] + '…'
     warnings = []
+    for check in checks:
+        if check['status'] == 'conflict':
+            warnings.append(f'Противоречие пожеланию «{check["preference"]}»: в описании «{check["source_excerpt"]}». Уточните условия.')
+        elif check['status'] == 'unknown':
+            warnings.append(f'Пожелание «{check["preference"]}» не подтверждено описанием; нужно уточнить у подрядчика.')
     if profile['synthetic']:
         warnings.append('Синтетический профиль организаторов.')
     if profile['price_imputed']:
@@ -75,6 +81,8 @@ def _card(profile: Profile, query: Query, score: float, quote: str) -> dict:
         'price_from_kzt': profile['price_from_kzt'],
         'languages': profile['languages'], 'max_hours': profile['max_hours'],
         'semantic_score': score,
+        'preference_checks': checks,
+        'preference_conflicts': sum(check['status'] == 'conflict' for check in checks),
         'explanation': '; '.join(facts) + f'. ИИ выделил фрагмент описания: «{excerpt}»',
         'description_excerpt': quote,
         'flags': {k: profile[k] for k in FLAG_FIELDS},
@@ -93,7 +101,7 @@ class Recommender:
         self.profile_vectors: dict[str, tuple[list[str], list[list[float]]]] = {}
         # Source changes invalidate result cache, even when version was not bumped.
         self.code_hash = fingerprint({name: (ROOT / 'hackalem' / name).read_text(encoding='utf-8')
-                                      for name in ('catalog.py', 'recommender.py', 'ai_model.py')})
+                                      for name in ('catalog.py', 'recommender.py', 'ai_model.py', 'preferences.py')})
 
     @property
     def encoder(self) -> Encoder:
@@ -148,8 +156,9 @@ class Recommender:
             'exclusion_counts': {r: counts[r] for r in REASONS if counts[r]},
             'dataset_sha256': self.dataset_hash, 'app_version': APP_VERSION,
             'model': None, 'ai_used': False,
-            'ranking_rule': 'semantic_score DESC (6 decimals), price_from_kzt ASC, id ASC',
+            'ranking_rule': 'preference_conflicts ASC, semantic_score DESC (6 decimals), price_from_kzt ASC, id ASC',
             'score_formula': '0.7 * best_chunk_cosine + 0.3 * mean_chunk_cosine',
+            'semantic_query': query.preferences or query.semantic_text(),
             'notice': 'Оценка ИИ — смысловая близость, не вероятность и не оценка качества. '
                       'Цена «от» не является окончательной сметой; '
                       'доступность — только по учебному календарю. '
@@ -165,7 +174,9 @@ class Recommender:
         cached = self.result_cache.get(key)
         if isinstance(cached, dict):
             return cached
-        query_vector = unit_mean([encoder.embed(text) for text in encoder.chunks(query.semantic_text())])
+        # City/category/format already have strict filters. Their generic words
+        # must not drown out the user's actual preferences in the embedding.
+        query_vector = unit_mean([encoder.embed(text) for text in encoder.chunks(query.preferences or query.semantic_text())])
         ranked = []
         for profile in eligible:
             chunks, vectors = self._profile_index(profile)
@@ -174,9 +185,15 @@ class Recommender:
             best = max(range(len(scores)), key=lambda i: (round(scores[i], 10), -i))
             score = round(BEST_CHUNK_WEIGHT * scores[best] +
                           MEAN_CHUNK_WEIGHT * (math.fsum(scores) / len(scores)), 6)
-            ranked.append((score, profile, chunks[best]))
-        ranked.sort(key=lambda item: (-item[0], item[1]['price_from_kzt'], item[1]['id']))
-        result['cards'] = [_card(p, query, score, quote) for score, p, quote in ranked[:3]]
+            checks = assess(query.preferences, profile['description'])
+            ranked.append((score, profile, chunks[best], checks))
+        ranked.sort(key=lambda item: (sum(c['status'] == 'conflict' for c in item[3]),
+                                      -item[0], item[1]['price_from_kzt'], item[1]['id']))
+        result['cards'] = [_card(p, query, score, quote, checks) for score, p, quote, checks in ranked[:3]]
+        if query.preferences:
+            result['message'] += ' Пожелания учитываются отдельно; смысловая близость не подтверждает все условия.'
+        if any(card['preference_conflicts'] for card in result['cards']):
+            result['message'] += ' В выдаче есть противоречия пожеланиям — они отмечены в карточках.'
         result['model'] = encoder.label
         result['model_fingerprint'] = encoder.identity
         result['ai_used'] = True

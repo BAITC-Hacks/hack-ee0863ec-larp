@@ -26,3 +26,23 @@ than silently treating unjudged contractors as bad matches.
 
 No human-rated benchmark is included yet. No improved quality score is claimed.
 Keep a fixed held-out set for comparing model or ranking changes.
+
+## Regression fixes (v1.1)
+
+Free-text preferences are encoded separately from the category/event context;
+otherwise generic category words can outweigh a short specific request.
+When preferences are empty, the existing category/event context is still used.
+
+A small Russian rule layer checks explicit statements about contests and games.
+Unqualified requests such as "без конкурсов" are checked against explicit absence
+or offers in descriptions. Conflicting profiles stay eligible under the structured
+filters, but sort after non-conflicting profiles and have a visible warning.
+Absence of evidence is not a promise. Qualified phrases ("без банальных конкурсов"),
+double negations and mixed statements are deliberately not treated as universal
+absence claims. This does NOT cover arbitrary negation, synonyms or all languages.
+The neural model still performs semantic ranking; rules never replace inference.
+
+`tests/test_preferences.py` includes the reproduced failure and opposite requests,
+unsupported wishes, qualifications, double negations, source evidence and determinism.
+These artificial fixtures are regression checks, not a human-rated quality benchmark.
+No overall accuracy or perfect understanding is claimed.

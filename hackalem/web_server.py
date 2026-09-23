@@ -14,6 +14,7 @@ from urllib.parse import urlsplit
 from hackalem.ai_model import MiniLMEncoder, ModelError
 from hackalem.catalog import ROOT, Query, fingerprint
 from hackalem.http_common import Handler, BoundedHTTPServer
+from hackalem.cors import CORSMixin, origin_key
 from hackalem.recommender import Recommender
 
 class BusyError(RuntimeError):
@@ -40,7 +41,8 @@ class RateLimiter:
             return True
 
 class Application:
-    def __init__(self, catalog_url, workers=2, encoder_factory=None):
+    def __init__(self, catalog_url, workers=2, encoder_factory=None, allowed_origins=()):
+        self.allowed_origins = frozenset(origin_key(value) for value in allowed_origins)
         self.client = CatalogClient(catalog_url)
         self.workers = [{"encoder": None, "engine": None} for _ in range(workers)]
         self.available = queue.Queue(maxsize=workers)
@@ -78,7 +80,7 @@ class Application:
         finally:
             self.available.put_nowait(worker)
 
-class WebHandler(Handler):
+class WebHandler(CORSMixin, Handler):
     def do_GET(self):
         route = urlsplit(self.path).path
         pages = {"/": "home.html", "/search": "index.html", "/search/": "index.html"}
@@ -102,6 +104,8 @@ class WebHandler(Handler):
             return self.wfile.write(body)
         if route not in ("/api/options", "/api/catalog", "/health"):
             return self.json_response({"error": "Не найдено"}, 404)
+        if not self.check_origin():
+            return
         try:
             profiles = self.server.app.profiles()
             if route == "/health":
@@ -124,9 +128,8 @@ class WebHandler(Handler):
     def do_POST(self):
         if urlsplit(self.path).path != "/api/recommend":
             return self.json_response({"error": "Не найдено"}, 404)
-        origin = self.headers.get("Origin")
-        if origin and urlsplit(origin).netloc != self.headers.get("Host"):
-            return self.json_response({"error": "Недопустимый источник запроса."}, 403)
+        if not self.check_origin():
+            return
         if not self.server.app.limiter.allow(self.client_address[0]):
             return self.json_response({"error": "Too many searches. Please wait a minute."}, 429,
                                       headers={"Retry-After": "60"})
@@ -134,7 +137,7 @@ class WebHandler(Handler):
             query = Query(**self.read_json())
         except TimeoutError:
             return self.json_response({"error": "Request body timed out."}, 408)
-        except (ValueError, TypeError):
+        except (ValueError, TypeError, RecursionError):
             return self.json_response({"error": "Проверьте поля: город, категория, формат, дата в периоде 23.09–31.12.2026, бюджет и длительность."}, 400)
         try:
             self.json_response(self.server.app.recommend(query))
@@ -149,9 +152,15 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--port", type=int, default=8000)
     parser.add_argument("--catalog-url", default="http://127.0.0.1:8001")
+    parser.add_argument("--allow-origin", action="append", default=[], metavar="URL",
+                        help="Allowed frontend origin, e.g. http://localhost:5173 (repeatable).")
     args = parser.parse_args()
+    try:
+        app = Application(args.catalog_url, allowed_origins=args.allow_origin)
+    except ValueError as exc:
+        parser.error(str(exc))
     server = BoundedHTTPServer(("127.0.0.1", args.port), WebHandler)
-    server.app = Application(args.catalog_url)
+    server.app = app
     try:
         server.app.warmup()
     except (OSError, ValueError, KeyError, ModelError) as exc:
