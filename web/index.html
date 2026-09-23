@@ -68,12 +68,31 @@ function card(item,index,catalog=false){
  else{node.append(el('blockquote',item.description_excerpt));const details=el('details');details.append(el('summary','Почему этот подрядчик'),el('p',item.explanation),el('p','Смысловая близость: '+item.semantic_score.toFixed(3)));node.append(details);item.warnings.forEach(w=>node.append(el('p',w,'warning')))}
  return node;
 }
+function formQuery(){const data=Object.fromEntries(new FormData(form));data.hours=data.hours||null;data.language=data.language||null;return data}
+function suggestion(item,original){
+ const node=el('article',undefined,'card');
+ node.append(el('h3',item.message),el('p','Все остальные условия сохранены. После изменения пройдут обязательные проверки: '+item.eligible_count+'.'));
+ item.profiles.forEach(p=>{node.append(el('p',p.name+' · '+p.id+' · от '+money.format(p.price_from_kzt)+' ₸'));p.warnings.forEach(w=>node.append(el('p',w,'warning')))});
+ const choose=el('button','Применить это изменение','primary');choose.type='button';
+ choose.onclick=()=>{
+  if(JSON.stringify(formQuery())!==JSON.stringify(original)){error('Условия в форме изменились. Выполните подбор заново для проверки предложений.');return}
+  form.elements[item.field].value=item.suggested_value;form.requestSubmit();
+ };
+ node.append(choose);return node;
+}
 form.addEventListener('submit',async event=>{
  event.preventDefault();errorBox.hidden=true;submit.disabled=true;submit.textContent='Подбираем…';results.setAttribute('aria-busy','true');results.replaceChildren();document.querySelector('#summary').textContent='ИИ сравнивает описания. Первый подбор может занять несколько секунд.';
- try{const data=Object.fromEntries(new FormData(form));data.hours=data.hours||null;data.language=data.language||null;const result=await api('/api/recommend',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
+ try{const data=formQuery();const result=await api('/api/recommend',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
  document.querySelector('#summary').textContent=result.message;
- if(!result.cards.length){results.append(el('div','Совпадений нет. Попробуйте другую дату, бюджет или категорию.','empty'))}
+ if(!result.cards.length){
+  results.append(el('div','По исходным условиям совпадений нет.','empty'));
+  if(result.suggestions?.length){
+   const alternatives=el('section');alternatives.append(el('h2','Варианты изменения запроса'),el('p','Это отдельные предложения. Условия изменятся только после вашего выбора.'));
+   result.suggestions.forEach(item=>alternatives.append(suggestion(item,data)));results.append(alternatives);
+  }else results.append(el('p','Изменение только бюджета или только даты не даёт совпадений в известном календаре.'));
+ }
  else result.cards.forEach((item,index)=>results.append(card(item,index)));
+ results.append(el('p',result.notice,'meta'));
  }catch(e){document.querySelector('#summary').textContent='';error(e.message)}
  finally{submit.disabled=false;submit.textContent='Подобрать подрядчиков';results.removeAttribute('aria-busy')}
 });

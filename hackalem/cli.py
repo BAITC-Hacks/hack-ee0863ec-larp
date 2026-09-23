@@ -27,6 +27,13 @@ def render(result: dict) -> str:
                   textwrap.fill(card['explanation'], width=100, initial_indent='   ', subsequent_indent='   ')]
         for warning in card['warnings']:
             lines.append('   Важно: ' + warning)
+    if result.get('suggestions'):
+        lines += ['', 'ОТДЕЛЬНЫЕ ПРЕДЛОЖЕНИЯ — исходные условия не изменены.']
+        for n, suggestion in enumerate(result['suggestions'], 1):
+            lines.append(f'{n}. {suggestion["message"]} Подойдут по обязательным условиям: {suggestion["eligible_count"]}.')
+            for profile in suggestion['profiles']:
+                lines.append(f'   {profile["name"]} | {profile["id"]}')
+                lines.extend('   Важно: ' + warning for warning in profile['warnings'])
     lines += ['', result['notice']]
     if result['ai_used']:
         lines.append('Модель: ' + result['model'])
@@ -161,7 +168,16 @@ def main() -> int:
         print('Enter принимает значение в скобках. «выход» завершает программу.\n')
         while True:
             query = read_interactive_query(profiles)
-            print(render(engine.recommend(query)))
+            result = engine.recommend(query)
+            print(render(result))
+            if result['suggestions']:
+                choices = result['suggestions']
+                choice = _choose('Применить предложение (0 — оставить условия)',
+                                 [str(n) for n in range(len(choices) + 1)], '0')
+                if choice != '0':
+                    suggestion = choices[int(choice) - 1]
+                    query = Query(**(query.as_dict() | {suggestion['field']: suggestion['suggested_value']}))
+                    print(render(engine.recommend(query)))
             reply = input('\nEnter — новый запрос; 0 — выход: ').strip()
             if normalized(reply) in ('0', 'нет', 'n', 'exit', 'quit', 'выход'):
                 break

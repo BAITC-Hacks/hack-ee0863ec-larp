@@ -3,12 +3,14 @@ from __future__ import annotations
 
 import math
 from collections import Counter
+from dataclasses import replace
+from datetime import date, timedelta
 from pathlib import Path
 from typing import Callable, Protocol
 
 from hackalem.cache_store import JsonCache
 from hackalem.preferences import assess
-from hackalem.catalog import (FLAG_FIELDS, REASONS, ROOT, Profile, Query, belongs, fingerprint,
+from hackalem.catalog import (FLAG_FIELDS, REASONS, ROOT, WINDOW_START, WINDOW_END, Profile, Query, belongs, fingerprint,
                      rejection_reasons, normalized)
 
 APP_VERSION = 'hackalem-ai-1.1'
@@ -48,6 +50,54 @@ def money(value: int) -> str:
     return f'{value:,}'.replace(',', ' ')
 
 
+def profile_warnings(profile: Profile) -> list[str]:
+    warnings = []
+    if profile['synthetic']:
+        warnings.append('Синтетический профиль организаторов.')
+    if profile['price_imputed']:
+        warnings.append('Цена проставлена при подготовке датасета, не подтверждена подрядчиком.')
+    if profile['city_imputed']:
+        warnings.append('Город проставлен при подготовке датасета.')
+    return warnings
+
+
+def change_suggestions(base: list[Profile], query: Query) -> list[dict]:
+    """Verify independent one-field alternatives without ranking or mutating the query."""
+    suggestions = []
+
+    def add(field: str, value: int | str, message: str) -> bool:
+        changed = replace(query, **{field: value})
+        eligible = [p for p in base if not rejection_reasons(p, changed)]
+        if not eligible:
+            return False
+        suggestions.append({
+            'field': field, 'original_value': getattr(query, field), 'suggested_value': value,
+            'message': message, 'eligible_count': len(eligible),
+            'profiles': [{'id': p['id'], 'name': p['anon_name'],
+                          'price_from_kzt': p['price_from_kzt'],
+                          'flags': {k: p[k] for k in FLAG_FIELDS},
+                          'warnings': profile_warnings(p)} for p in eligible],
+        })
+        return True
+
+    prices = [p['price_from_kzt'] for p in base
+              if rejection_reasons(p, query) == ['budget']]
+    if prices:
+        amount = min(prices)
+        add('budget_kzt', amount, f'Изменить только бюджет: {money(query.budget_kzt)} → {money(amount)} ₸.')
+    # Nearest calendar day, preferring the later day in a tie; never leave the known window.
+    if any(rejection_reasons(p, query) == ['busy_date'] for p in base):
+        original = date.fromisoformat(query.event_date)
+        dates = [WINDOW_START + timedelta(days=n)
+                 for n in range((WINDOW_END - WINDOW_START).days + 1)]
+        dates.sort(key=lambda day: (abs((day - original).days), day < original))
+        for day in dates:
+            if day != original and add('event_date', day.isoformat(),
+                    f'Изменить только дату: {query.event_date} → {day.isoformat()}.'):
+                break
+    return suggestions
+
+
 def _card(profile: Profile, query: Query, score: float, quote: str, checks: list[dict]) -> dict:
     facts = [f'В каталоге нет занятости на {query.event_date}',
              f'формат «{query.event_format}» указан',
@@ -67,12 +117,7 @@ def _card(profile: Profile, query: Query, score: float, quote: str, checks: list
             warnings.append(f'Противоречие пожеланию «{check["preference"]}»: в описании «{check["source_excerpt"]}». Уточните условия.')
         elif check['status'] == 'unknown':
             warnings.append(f'Пожелание «{check["preference"]}» не подтверждено описанием; нужно уточнить у подрядчика.')
-    if profile['synthetic']:
-        warnings.append('Синтетический профиль организаторов.')
-    if profile['price_imputed']:
-        warnings.append('Цена проставлена при подготовке датасета, не подтверждена подрядчиком.')
-    if profile['city_imputed']:
-        warnings.append('Город проставлен при подготовке датасета.')
+    warnings.extend(profile_warnings(profile))
     return {
         'id': profile['id'], 'name': profile['anon_name'],
         'category': next(c for c in profile['categories']
@@ -152,7 +197,7 @@ class Recommender:
         result = {
             'status': status, 'message': message, 'query': query.as_dict(),
             'city_category_count': len(base), 'eligible_count': len(eligible),
-            'cards': [], 'exclusions': exclusions,
+            'cards': [], 'suggestions': [], 'exclusions': exclusions,
             'exclusion_counts': {r: counts[r] for r in REASONS if counts[r]},
             'dataset_sha256': self.dataset_hash, 'app_version': APP_VERSION,
             'model': None, 'ai_used': False,
@@ -166,6 +211,7 @@ class Recommender:
         }
         # With no candidates there is nothing to analyze; no fake AI score.
         if not eligible:
+            result['suggestions'] = change_suggestions(base, query)
             return result
         encoder = self.encoder
         key = fingerprint({'query': query.as_dict(), 'dataset': self.dataset_hash,
