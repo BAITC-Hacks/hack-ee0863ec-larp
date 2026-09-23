@@ -65,7 +65,7 @@ def ensure_model(folder: Path, *, offline: bool = False,
         os.close(fd)
         temp = Path(temp_name)
         try:
-            request = urllib.request.Request(url, headers={'User-Agent': 'HackAlem-CLI/1.0'})
+            request = urllib.request.Request(url, headers={'User-Agent': 'FSP-CLI/1.0'})
             digest = hashlib.sha256()
             received = 0
             step = 0

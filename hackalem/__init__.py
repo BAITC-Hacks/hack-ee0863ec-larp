@@ -1,1 +1,1 @@
-"""HackAlem catalogue, recommendation engine, and local services."""
+"""FSP catalogue, recommendation engine, and local services."""

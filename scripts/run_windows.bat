@@ -2,7 +2,7 @@
 setlocal
 chcp 65001 >nul
 cd /d "%~dp0.."
-echo HackAlem AI console
+echo FSP AI console
 if exist ".venv\Scripts\python.exe" goto check_python
 where py >nul 2>nul
 if errorlevel 1 goto use_python

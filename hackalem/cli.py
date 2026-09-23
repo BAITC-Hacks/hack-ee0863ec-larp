@@ -1,4 +1,4 @@
-"""Interactive console for the supplied HackAlem catalogue."""
+"""Interactive console for the supplied FSP catalogue."""
 from __future__ import annotations
 
 import argparse
@@ -99,7 +99,7 @@ def read_interactive_query(profiles: list[dict]) -> Query:
 
 
 def arguments() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description='HackAlem: до 3 подрядчиков с анализом описаний предобученной MiniLM.')
+    parser = argparse.ArgumentParser(description='FSP: до 3 подрядчиков с анализом описаний предобученной MiniLM.')
     parser.add_argument('--catalog', type=Path, default=None, help='CSV или JSONL')
     parser.add_argument('--database', type=Path, default=ROOT / 'data/catalog.sqlite3', help='Shared SQLite catalogue')
     parser.add_argument('--model-dir', type=Path, default=ROOT / 'models')
@@ -162,7 +162,7 @@ def main() -> int:
             if args.json:
                 print(canonical_json(output))
             return 0
-        print(f'HackAlem AI — консольный подбор. В каталоге {len(profiles)} профилей.')
+        print(f'FSP AI — консольный подбор. В каталоге {len(profiles)} профилей.')
         print('Условия проверяет код; описания анализирует предобученная нейросеть.')
         print('При первом AI-запросе загружаются веса; далее возможна работа без интернета.')
         print('Enter принимает значение в скобках. «выход» завершает программу.\n')
